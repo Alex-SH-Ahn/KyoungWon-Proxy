@@ -4,13 +4,29 @@ const { createProxyMiddleware } = require("http-proxy-middleware");
 
 const app = express();
 
-app.use(
-  cors({
-    origin: "https://gyeongwon-environment-web-and-app.github.io",
-    credentials: true,
-  })
-);
+// 1) 허용할 origin 목록
+const allowedOrigins = [
+  "http://localhost:5173", // 로컬 개발용
+  "https://gyeongwon-environment-web-and-app.github.io", // 배포된 프론트
+];
 
+const corsOptions = {
+  origin: (origin, callback) => {
+    // origin이 없을 수도 있어서(null) 허용
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error("Not allowed by CORS"));
+    }
+  },
+  credentials: true,
+};
+
+// 2) CORS 미들웨어 적용 + preflight(OPTIONS) 처리
+app.use(cors(corsOptions));
+app.options("*", cors(corsOptions));
+
+// 3) /api → 백엔드로 프록시
 app.use(
   "/api",
   createProxyMiddleware({
