@@ -6,13 +6,13 @@ const app = express();
 
 // 1) 허용할 origin 목록
 const allowedOrigins = [
-  "http://localhost:5173", // 로컬 개발용
+  "http://localhost:5173", // 로컬 개발
   "https://gyeongwon-environment-web-and-app.github.io", // 배포된 프론트
 ];
 
 const corsOptions = {
   origin: (origin, callback) => {
-    // origin이 없을 수도 있어서(null) 허용
+    // origin이 없을 수도 있음(null) -> 허용
     if (!origin || allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
@@ -22,17 +22,15 @@ const corsOptions = {
   credentials: true,
 };
 
-// 2) CORS 미들웨어 적용 + preflight(OPTIONS) 처리
 app.use(cors(corsOptions));
-app.options("*", cors(corsOptions));
 
-// 3) /api → 백엔드로 프록시
 app.use(
   "/api",
+  cors(corsOptions),
   createProxyMiddleware({
-    target: "http://20.214.33.209:3000",
+    target: "http://20.214.33.209:3000", // 실제 백엔드
     changeOrigin: true,
-    pathRewrite: { "^/api": "" },
+    pathRewrite: { "^/api": "" }, // /api/tempTruck/getAll -> /tempTruck/getAll
   })
 );
 
