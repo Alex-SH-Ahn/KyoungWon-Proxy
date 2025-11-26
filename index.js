@@ -12,17 +12,47 @@ const allowedOrigins = [
 
 const corsOptions = {
   origin: (origin, callback) => {
-    // origin이 없을 수도 있음(null) -> 허용
-    if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error("Not allowed by CORS"));
+    // origin 이 없으면(예: 모바일 앱, Postman 등) 일단 허용
+    if (!origin) {
+      return callback(null, true);
     }
+
+    // 1) 허용 리스트에 있는지 확인
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+
+    // 2) 로컬 네트워크 개발(IP로 접근하는 경우)도 허용
+    //    예: http://192.168.0.10:5173, http://10.0.2.2:5173 등
+    if (
+      origin.startsWith("http://192.168.") ||
+      origin.startsWith("http://10.") ||
+      origin.startsWith("http://172.")
+    ) {
+      return callback(null, true);
+    }
+
+    // 3) (옵션) capacitor 앱인 경우
+    if (origin.startsWith("capacitor://")) {
+      return callback(null, true);
+    }
+
+    // 전부 아니면 거절
+    callback(new Error(`Not allowed by CORS: ${origin}`));
   },
   credentials: true,
+  methods: ["GET", "PUT"],
+  allowedHeaders: [
+    "Origin",
+    "X-Requested-With",
+    "Content-Type",
+    "Accept",
+    "Authorization",
+  ],
 };
 
 app.use(cors(corsOptions));
+app.options("*", cors(corsOptions));
 
 // Add request logging middleware
 app.use((req, res, next) => {
