@@ -10,10 +10,19 @@ const allowedOrigins = [
   "https://gyeongwon-environment-web-and-app.github.io", // 배포된 프론트
 ];
 
+// Development mode: allow all origins (set NODE_ENV=production to restrict)
+const isDevelopment = process.env.NODE_ENV !== "production";
+
 const corsOptions = {
   origin: (origin, callback) => {
     // origin 이 없으면(예: 모바일 앱, Postman 등) 일단 허용
     if (!origin) {
+      return callback(null, true);
+    }
+
+    // Development mode: allow all origins for easier collaboration
+    if (isDevelopment) {
+      console.log(`[DEV] Allowing origin: ${origin}`);
       return callback(null, true);
     }
 
@@ -24,20 +33,33 @@ const corsOptions = {
 
     // 2) 로컬 네트워크 개발(IP로 접근하는 경우)도 허용
     //    예: http://192.168.0.10:5173, http://10.0.2.2:5173 등
+    //    HTTPS도 허용 (예: https://192.168.0.10:5173)
     if (
       origin.startsWith("http://192.168.") ||
       origin.startsWith("http://10.") ||
-      origin.startsWith("http://172.")
+      origin.startsWith("http://172.") ||
+      origin.startsWith("https://192.168.") ||
+      origin.startsWith("https://10.") ||
+      origin.startsWith("https://172.")
     ) {
       return callback(null, true);
     }
 
-    // 3) (옵션) capacitor 앱인 경우
+    // 3) localhost 모든 포트 허용 (개발 편의)
+    if (
+      origin.startsWith("http://localhost:") ||
+      origin.startsWith("https://localhost:")
+    ) {
+      return callback(null, true);
+    }
+
+    // 4) (옵션) capacitor 앱인 경우
     if (origin.startsWith("capacitor://")) {
       return callback(null, true);
     }
 
     // 전부 아니면 거절
+    console.error(`[CORS] Rejected origin: ${origin}`);
     callback(new Error(`Not allowed by CORS: ${origin}`));
   },
   credentials: true,
