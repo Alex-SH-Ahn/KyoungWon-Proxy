@@ -53,8 +53,18 @@ const corsOptions = {
       return callback(null, true);
     }
 
-    // 4) (옵션) capacitor 앱인 경우
+    // 4) Capacitor 앱인 경우 (Android, iOS 모두)
     if (origin.startsWith("capacitor://")) {
+      return callback(null, true);
+    }
+
+    // 5) iOS Capacitor 앱인 경우 (ionic://localhost 사용)
+    if (origin.startsWith("ionic://")) {
+      return callback(null, true);
+    }
+
+    // 6) file:// 프로토콜 (일부 모바일 앱에서 사용)
+    if (origin.startsWith("file://")) {
       return callback(null, true);
     }
 
@@ -78,7 +88,9 @@ app.options("*", cors(corsOptions));
 
 // Add request logging middleware
 app.use((req, res, next) => {
-  console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
+  const origin = req.headers.origin || 'no-origin';
+  const userAgent = req.headers['user-agent'] || 'unknown';
+  console.log(`${new Date().toISOString()} - ${req.method} ${req.path} | Origin: ${origin} | User-Agent: ${userAgent.substring(0, 50)}`);
   next();
 });
 
